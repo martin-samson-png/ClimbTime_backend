@@ -9,6 +9,7 @@ const schema = Joi.object({
   JWT_SECRET: Joi.string().min(32).required(),
   RESEND_API_KEY: Joi.string().required(),
   FRONT_URL: Joi.string().uri().required(),
+  TOKEN_HMAC_SECRET: Joi.string().min(32).required(),
 }).unknown();
 
 const { value, error } = schema.validate(process.env);

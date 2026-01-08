@@ -1,13 +1,8 @@
-import type { UserRole } from "@prisma/client";
+import type { UserRole, TokenType, Token } from "@prisma/client";
 import { prisma } from "../config/prisma.js";
+import { hashToken } from "../utils/hash.js";
 
-export type TokenType =
-  | "INVITE_ADMIN"
-  | "INVITE_JURY"
-  | "EMAIL_VERIFY"
-  | "RESET_PASSWORD";
-
-export interface CreateTokenInuput {
+export interface CreateTokenInput {
   type: TokenType;
   tokenHash: string;
   expiresAt: Date;
@@ -18,7 +13,7 @@ export interface CreateTokenInuput {
 }
 
 export class TokenModel {
-  static async create(data: CreateTokenInuput) {
+  static async create(data: CreateTokenInput): Promise<Token> {
     if (!data.type) {
       const err = new Error("Token type is required");
       (err as any).status = 400;
@@ -51,6 +46,63 @@ export class TokenModel {
       },
     });
     return token;
+  }
+
+  static async valid(
+    rawToken: string,
+    expectedType?: TokenType
+  ): Promise<Token> {
+    if (!rawToken) {
+      const err = new Error("rawToken is required");
+      (err as any).status = 400;
+      throw err;
+    }
+
+    const tokenHash = hashToken(rawToken);
+
+    const token = await prisma.token.findUnique({
+      where: { tokenHash: tokenHash },
+    });
+
+    if (!token) {
+      const err = new Error("Invalid or expired token");
+      (err as any).status = 404;
+      throw err;
+    }
+    if (token.usedAt) {
+      const err = new Error("Token already used");
+      (err as any).status = 409;
+      throw err;
+    }
+    if (token.expiresAt <= new Date()) {
+      const err = new Error("Invalid token");
+      (err as any).status = 400;
+      throw err;
+    }
+    if (expectedType && token.type !== expectedType) {
+      const err = new Error("Invalid token type");
+      (err as any).status = 403;
+      throw err;
+    }
+
+    return token;
+  }
+
+  static async consume(id: string): Promise<void> {
+    if (!id) {
+      const err = new Error("Id required");
+      (err as any).status = 400;
+      throw err;
+    }
+    const result = await prisma.token.updateMany({
+      where: { id, usedAt: null },
+      data: { usedAt: new Date() },
+    });
+    if (result.count === 0) {
+      const err = new Error("Token already used or not found");
+      (err as any).status = 409;
+      throw err;
+    }
   }
 
   static async findValidByType(type: TokenType) {
