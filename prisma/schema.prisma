@@ -1,0 +1,144 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+//ENUM
+
+enum UserRole {
+  ADMIN
+  PARTICIPANT
+  USER
+}
+
+enum SessionStatus {
+  DRAFT
+  READY
+  RUNNING
+  FINISHED
+}
+
+enum TokenType {
+  INVITE_ADMIN
+  INVITE_JURY
+  EMAIL_VERIFY
+  RESET_PASSWORD
+}
+
+//MODELS
+
+model User {
+  id        String   @id @default(uuid())
+  firstname String
+  lastname  String
+  email     String   @unique
+  password  String
+  role      UserRole @default(USER)
+  isActive  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  participant  Participant?
+  jurySessions JurySession[]
+  sessions     Session[]     @relation("SessionCreator")
+  scores       Score[]
+  tokens       Token[]       @relation("UserTokens")
+
+  @@map("users")
+}
+
+model Participant {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  age       Int
+  club      String?
+  createdAt DateTime @default(now())
+
+  user    User      @relation(fields: [userId], references: [id])
+  attempt Attempt[]
+
+  @@map("participants")
+}
+
+model Session {
+  id        String        @id @default(uuid())
+  createdBy String
+  name      String
+  startedAt DateTime
+  endedAt   DateTime
+  status    SessionStatus @default(DRAFT)
+  createdAt DateTime      @default(now())
+
+  creator      User          @relation("SessionCreator", fields: [createdBy], references: [id])
+  jurySessions JurySession[]
+  attempts     Attempt[]
+  tokens       Token[]       @relation("SessionTokens")
+
+  @@map("sessions")
+}
+
+model JurySession {
+  userId    String
+  sessionId String
+
+  user    User    @relation(fields: [userId], references: [id])
+  session Session @relation(fields: [sessionId], references: [id])
+
+  @@id([userId, sessionId])
+  @@map("jury_sessions")
+}
+
+model Attempt {
+  id            String    @id @default(uuid())
+  sessionId     String
+  participantId String
+  startedAt     DateTime
+  endedAt       DateTime?
+  createdAt     DateTime  @default(now())
+
+  session     Session     @relation(fields: [sessionId], references: [id])
+  participant Participant @relation(fields: [participantId], references: [id])
+  scores      Score[]
+
+  @@map("attempts")
+}
+
+model Score {
+  id        String   @id @default(uuid())
+  juryId    String
+  attemptId String
+  value     Float
+  createdAt DateTime @default(now())
+
+  jury    User    @relation(fields: [juryId], references: [id])
+  attempt Attempt @relation(fields: [attemptId], references: [id])
+
+  @@unique([juryId, attemptId])
+  @@map("scores")
+}
+
+model Token {
+  id        String    @id @default(uuid())
+  type      TokenType
+  tokenHash String    @unique
+  userId    String?
+  email     String?
+  sessionId String?
+  role      UserRole?
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user    User?    @relation("UserTokens", fields: [userId], references: [id])
+  session Session? @relation("SessionTokens", fields: [sessionId], references: [id])
+
+  @@map("tokens")
+}
