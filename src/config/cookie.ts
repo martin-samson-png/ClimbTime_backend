@@ -7,6 +7,6 @@ export const baseCookieOptions = {
   path: "/",
 } as const;
 
-export function authCookieOptions(maxAgeMs: number) {
+export const authCookieOptions = (maxAgeMs: number) => {
   return { ...baseCookieOptions, maxAge: maxAgeMs };
-}
+};

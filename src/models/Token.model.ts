@@ -1,6 +1,7 @@
 import type { UserRole, TokenType, Token } from "@prisma/client";
 import { prisma } from "../config/prisma.js";
-import { hashToken } from "../utils/hash.js";
+import { hashRawToken } from "../utils/token.js";
+import { makeErr } from "../utils/error.js";
 
 export interface CreateTokenInput {
   type: TokenType;
@@ -14,26 +15,15 @@ export interface CreateTokenInput {
 
 export class TokenModel {
   static async create(data: CreateTokenInput): Promise<Token> {
-    if (!data.type) {
-      const err = new Error("Token type is required");
-      (err as any).status = 400;
-      throw err;
-    }
-    if (!data.tokenHash) {
-      const err = new Error("Token hash is required");
-      (err as any).status = 400;
-      throw err;
-    }
-    if (!(data.expiresAt instanceof Date)) {
-      const err = new Error("expiresAtmust be a Date");
-      (err as any).status = 400;
-      throw err;
-    }
-    if (data.expiresAt <= new Date()) {
-      const err = new Error("expiresAt must be in the future");
-      (err as any).status = 400;
-      throw err;
-    }
+    if (!data.type) throw makeErr(400, "Token type est obligatoire");
+    if (!data.tokenHash) throw makeErr(400, "TokenHash est obligatoire");
+    if (!(data.expiresAt instanceof Date))
+      throw makeErr(400, "expireAt doit être une Date ");
+    if (data.expiresAt <= new Date())
+      throw makeErr(
+        400,
+        "La date d'expiration doit être ultérieur a la date du jour"
+      );
     const token = await prisma.token.create({
       data: {
         type: data.type,
@@ -52,57 +42,31 @@ export class TokenModel {
     rawToken: string,
     expectedType?: TokenType
   ): Promise<Token> {
-    if (!rawToken) {
-      const err = new Error("rawToken is required");
-      (err as any).status = 400;
-      throw err;
-    }
+    if (!rawToken) throw makeErr(400, "rawToken est obligatoire");
 
-    const tokenHash = hashToken(rawToken);
+    const tokenHash = hashRawToken(rawToken);
 
     const token = await prisma.token.findUnique({
       where: { tokenHash: tokenHash },
     });
 
-    if (!token) {
-      const err = new Error("Invalid or expired token");
-      (err as any).status = 404;
-      throw err;
-    }
-    if (token.usedAt) {
-      const err = new Error("Token already used");
-      (err as any).status = 409;
-      throw err;
-    }
-    if (token.expiresAt <= new Date()) {
-      const err = new Error("Invalid token");
-      (err as any).status = 400;
-      throw err;
-    }
-    if (expectedType && token.type !== expectedType) {
-      const err = new Error("Invalid token type");
-      (err as any).status = 403;
-      throw err;
-    }
+    if (!token) throw makeErr(404, "Token invalide ou expiré");
+    if (token.usedAt) throw makeErr(409, "Token déjà utilisé");
+    if (token.expiresAt <= new Date()) throw makeErr(400, "Token invalide");
+    if (expectedType && token.type !== expectedType)
+      throw makeErr(403, "Type de token invalide");
 
     return token;
   }
 
   static async consume(id: string): Promise<void> {
-    if (!id) {
-      const err = new Error("Id required");
-      (err as any).status = 400;
-      throw err;
-    }
+    if (!id) throw makeErr(400, "Id obligatoire");
     const result = await prisma.token.updateMany({
       where: { id, usedAt: null },
       data: { usedAt: new Date() },
     });
-    if (result.count === 0) {
-      const err = new Error("Token already used or not found");
-      (err as any).status = 409;
-      throw err;
-    }
+    if (result.count === 0)
+      throw makeErr(409, "Token invalide ou déjà utilisé");
   }
 
   static async findValidByType(type: TokenType) {
