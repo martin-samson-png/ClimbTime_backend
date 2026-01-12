@@ -1,4 +1,4 @@
-import type { User, UserRole } from "@prisma/client";
+import type { Prisma, PrismaClient, User, UserRole } from "@prisma/client";
 import { prisma } from "../config/prisma.js";
 
 export interface CreateUser {
@@ -10,8 +10,11 @@ export interface CreateUser {
 }
 
 export class UserModel {
-  static async create(data: CreateUser): Promise<User> {
-    const user = await prisma.user.create({
+  static async create(
+    data: CreateUser,
+    db: Prisma.TransactionClient | PrismaClient = prisma
+  ): Promise<User> {
+    const user = await db.user.create({
       data: {
         firstname: data.firstname,
         lastname: data.lastname,

@@ -14,11 +14,6 @@ export const adminRegisterSchema = Joi.object({
     "any.required": "Le prénom est obligatoire",
     "string.empty": "Le prénom est obligatoire",
   }),
-  email: Joi.string().trim().lowercase().email().required().messages({
-    "any.required": "L'email est obligatoire",
-    "string.empty": "L'email est obligatoire",
-    "string.email": "L'email n'est pas valide",
-  }),
   password: Joi.string().trim().min(8).required().messages({
     "any.required": "Le mot de passe est obligatoire",
     "string.empty": "Le mot de passe est obligatoire",

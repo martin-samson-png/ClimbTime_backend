@@ -8,6 +8,7 @@ const schema = Joi.object({
   DIRECT_URL: Joi.string().required(),
   JWT_SECRET: Joi.string().min(32).required(),
   RESEND_API_KEY: Joi.string().required(),
+  RESEND_FROM: Joi.string().required(),
   FRONT_URL: Joi.string().uri().required(),
   TOKEN_HMAC_SECRET: Joi.string().min(32).required(),
 }).unknown();

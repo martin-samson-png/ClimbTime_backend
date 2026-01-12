@@ -1,4 +1,10 @@
-import type { UserRole, TokenType, Token } from "@prisma/client";
+import type {
+  UserRole,
+  TokenType,
+  Token,
+  Prisma,
+  PrismaClient,
+} from "@prisma/client";
 import { prisma } from "../config/prisma.js";
 import { hashRawToken } from "../utils/token.js";
 import { makeErr } from "../utils/error.js";
@@ -45,6 +51,7 @@ export class TokenModel {
     if (!rawToken) throw makeErr(400, "rawToken est obligatoire");
 
     const tokenHash = hashRawToken(rawToken);
+    console.log(tokenHash);
 
     const token = await prisma.token.findUnique({
       where: { tokenHash: tokenHash },
@@ -59,14 +66,29 @@ export class TokenModel {
     return token;
   }
 
-  static async consume(id: string): Promise<void> {
+  static async consume(
+    id: string,
+    db: Prisma.TransactionClient | PrismaClient = prisma
+  ): Promise<void> {
     if (!id) throw makeErr(400, "Id obligatoire");
-    const result = await prisma.token.updateMany({
+    const result = await db.token.updateMany({
       where: { id, usedAt: null },
       data: { usedAt: new Date() },
     });
-    if (result.count === 0)
+    if (result.count !== 1)
       throw makeErr(409, "Token invalide ou déjà utilisé");
+  }
+
+  static async findActiveInviteAdminByEmail(email: string) {
+    const token = prisma.token.findFirst({
+      where: {
+        email,
+        type: "INVITE_ADMIN",
+        usedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+    });
+    return token;
   }
 
   static async findValidByType(type: TokenType) {
