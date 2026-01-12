@@ -56,7 +56,7 @@ authRouter.get(
 
       const user = await UserModel.findById(userId);
       if (!user) throw makeErr(401, "Session invalide");
-      res.status(200).json(sanitizeUser(user));
+      return res.status(200).json(sanitizeUser(user));
     } catch (err) {
       console.error(err);
       res.clearCookie("auth", baseCookieOptions);
@@ -64,3 +64,8 @@ authRouter.get(
     }
   }
 );
+
+authRouter.post("/logout", (_req: Request, res: Response) => {
+  res.clearCookie("auth", baseCookieOptions);
+  return res.status(204).end();
+});
