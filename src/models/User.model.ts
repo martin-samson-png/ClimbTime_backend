@@ -30,4 +30,9 @@ export class UserModel {
     const user = await prisma.user.findUnique({ where: { email } });
     return user ?? null;
   }
+
+  static async findById(id: string): Promise<User | null> {
+    const user = await prisma.user.findUnique({ where: { id } });
+    return user ?? null;
+  }
 }

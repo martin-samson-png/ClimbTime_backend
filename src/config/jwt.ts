@@ -3,7 +3,7 @@ import { env } from "./env.js";
 import jwt, { type SignOptions } from "jsonwebtoken";
 
 export interface JwtPayload {
-  userId: string;
+  sub: string;
   role: "ADMIN" | "USER" | "PARTICIPANT";
 }
 

@@ -59,8 +59,8 @@ adminAuthRouter.post(
 
 adminAuthRouter.post(
   "/invite",
-  /*   checkAuth,
-  checkRole("ADMIN"), */
+  checkAuth,
+  checkRole("ADMIN"),
   validate(inviteAdminSchema),
   async (req, res, next) => {
     try {
@@ -69,7 +69,7 @@ adminAuthRouter.post(
       if (isInvitExist)
         throw makeErr(409, "Invitation déjà envoyée (encore valide)");
       const isUserExist = await UserModel.findByEmail(email);
-      if (isUserExist) throw makeErr(409, "Utilisatuer existant");
+      if (isUserExist) throw makeErr(409, "Utilisateur existant");
       const expiresAt = new Date(
         Date.now() + expiresInDays * 24 * 60 * 60 * 1000
       );

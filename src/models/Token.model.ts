@@ -100,7 +100,9 @@ export class TokenModel {
   }
 
   static async deleteById(id: string) {
-    throw new Error("Not implemented");
+    if (!id) throw makeErr(400, "Id obligatoire");
+    const result = await prisma.token.deleteMany({ where: { id } });
+    if (result.count !== 1) throw makeErr(404, "Token introuvable");
   }
 
   static async deleteExpired() {
