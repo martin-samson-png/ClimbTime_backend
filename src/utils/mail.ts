@@ -64,9 +64,6 @@ ${inviteUrl}
 
 Ce lien expirera le ${expiresAtHuman}.
 
-Si le lien ne fonctionne pas, vous pouvez copier/coller ce token :
-${rawToken}
-
 Si vous n’êtes pas à l’origine de cette demande, vous pouvez ignorer cet email.
 `;
 
@@ -104,15 +101,6 @@ Si vous n’êtes pas à l’origine de cette demande, vous pouvez ignorer cet e
   </p>
   <p style="margin: 0 0 16px;">
     <a href="${inviteUrl}" style="color: #111;">${inviteUrl}</a>
-  </p>
-
-  <p style="margin: 0 0 8px; color: #444;">
-    Ou utilisez directement ce token :
-  </p>
-  <p style="margin: 0 0 16px;">
-    <code style="display: inline-block; padding: 10px 12px; background: #f6f6f6; border-radius: 8px; font-size: 13px;">
-      ${rawToken}
-    </code>
   </p>
 
   <p style="margin: 18px 0 0; color: #666; font-size: 12px;">
