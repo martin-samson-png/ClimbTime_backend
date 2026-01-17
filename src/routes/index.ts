@@ -9,7 +9,7 @@ router.use("/admin/auth", adminAuthRouter);
 
 router.use("/auth", authRouter);
 
-router.use("/session", sessionRouter);
+router.use("/sessions", sessionRouter);
 
 router.get("/health", (_req, res) => {
   res.json({ status: "ok" });
