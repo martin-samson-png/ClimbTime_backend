@@ -28,7 +28,7 @@ export class TokenModel {
     if (data.expiresAt <= new Date())
       throw makeErr(
         400,
-        "La date d'expiration doit être ultérieur a la date du jour"
+        "La date d'expiration doit être ultérieur a la date du jour",
       );
     const token = await prisma.token.create({
       data: {
@@ -46,12 +46,11 @@ export class TokenModel {
 
   static async valid(
     rawToken: string,
-    expectedType?: TokenType
+    expectedType?: TokenType,
   ): Promise<Token> {
     if (!rawToken) throw makeErr(400, "rawToken est obligatoire");
 
     const tokenHash = hashRawToken(rawToken);
-    console.log(tokenHash);
 
     const token = await prisma.token.findUnique({
       where: { tokenHash: tokenHash },
@@ -68,7 +67,7 @@ export class TokenModel {
 
   static async consume(
     id: string,
-    db: Prisma.TransactionClient | PrismaClient = prisma
+    db: Prisma.TransactionClient | PrismaClient = prisma,
   ): Promise<void> {
     if (!id) throw makeErr(400, "Id obligatoire");
     const result = await db.token.updateMany({

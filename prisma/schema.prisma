@@ -72,6 +72,7 @@ model Session {
   id        String        @id @default(uuid())
   createdBy String
   name      String
+  city      String
   startedAt DateTime
   endedAt   DateTime
   status    SessionStatus @default(DRAFT)
@@ -82,6 +83,7 @@ model Session {
   attempts     Attempt[]
   tokens       Token[]       @relation("SessionTokens")
 
+  @@unique([city, name, startedAt])
   @@map("sessions")
 }
 

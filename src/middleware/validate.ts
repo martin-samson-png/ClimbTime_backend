@@ -7,6 +7,7 @@ export const validate =
     const { error, value } = schema.validate(req.body, {
       abortEarly: false,
       stripUnknown: true,
+      convert: true,
     });
 
     if (error) {

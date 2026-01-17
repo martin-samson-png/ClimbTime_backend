@@ -14,7 +14,6 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: DATABASE_URL,
-    shadowDatabaseUrl: DIRECT_URL,
+    url: DIRECT_URL,
   },
 });
