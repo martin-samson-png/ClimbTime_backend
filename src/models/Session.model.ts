@@ -71,7 +71,26 @@ export class SessionModel {
     throw new Error("Not implemented");
   }
 
-  static async setStatus(id: string, status: SessionStatus) {
-    throw new Error("Not implemented");
+  static async setStatus({
+    id,
+    fromStatus,
+    toStatus,
+  }: {
+    id: string;
+    fromStatus: SessionStatus;
+    toStatus: SessionStatus;
+  }): Promise<Session> {
+    const result = await prisma.session.updateMany({
+      where: { id, status: fromStatus },
+      data: { status: toStatus },
+    });
+    if (result.count !== 1)
+      throw makeErr(
+        409,
+        "Conflit: statut modifié entre-temps, recharge la session.",
+      );
+    const updated = await prisma.session.findUnique({ where: { id } });
+    if (!updated) throw makeErr(404, "Session introuvable");
+    return updated;
   }
 }

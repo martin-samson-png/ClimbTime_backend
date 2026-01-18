@@ -1,10 +1,27 @@
 import type { Request, Response, NextFunction } from "express";
 import Joi from "joi";
 
+type ValidateTarget = "body" | "params" | "query";
+
 export const validate =
-  (schema: Joi.ObjectSchema) =>
+  (schema: Joi.ObjectSchema, target: ValidateTarget = "body") =>
   (req: Request, _res: Response, next: NextFunction) => {
-    const { error, value } = schema.validate(req.body, {
+    let data: unknown;
+    switch (target) {
+      case "params":
+        data = req.params;
+        break;
+      case "query":
+        data = req.query;
+        break;
+      case "body":
+        data = req.body;
+        break;
+      default:
+        data = req.body;
+        break;
+    }
+    const { error, value } = schema.validate(data, {
       abortEarly: false,
       stripUnknown: true,
       convert: true,
@@ -16,6 +33,8 @@ export const validate =
       return next(err);
     }
 
-    req.body = value;
+    if (target === "body") req.body = value;
+    if (target === "params") req.params = value;
+    if (target === "query") req.query = value;
     next();
   };

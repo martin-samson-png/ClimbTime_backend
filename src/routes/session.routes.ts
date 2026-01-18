@@ -4,10 +4,14 @@ import { checkRole } from "../middleware/checkRole.js";
 import { validate } from "../middleware/validate.js";
 import {
   sessionCreateSchema,
+  sessionIdParamsSchema,
+  sessionSetStatusBodySchema,
   sessionUpdateSchema,
 } from "../validators/session.validator.js";
 import { SessionModel } from "../models/Session.model.js";
 import { makeErr } from "../utils/error.js";
+import type { SessionStatus } from "@prisma/client";
+import { isStatusTransitionAllowed } from "../domain/sessions/session.transitions.js";
 
 export const sessionRouter = Router();
 
@@ -29,21 +33,20 @@ sessionRouter.post(
 );
 
 sessionRouter.patch(
-  "/:id",
+  "/:id/update",
   checkAuth,
+  checkRole("ADMIN"),
+  validate(sessionIdParamsSchema, "params"),
   validate(sessionUpdateSchema),
   async (req, res, next) => {
     try {
       const patch = req.body;
       const sessionId = req.params.id;
-      const userId = req.auth?.userId;
 
       if (!sessionId) throw makeErr(400, "Id manquant.");
 
       const session = await SessionModel.findById(sessionId);
       if (!session) throw makeErr(404, "Session introuvable");
-      if (userId !== session.createdBy)
-        throw makeErr(403, "Vous n'avez pas les droits.");
 
       const newStartedAt = patch.startedAt ?? session.startedAt;
       const newEndedAt = patch.endedAt ?? session.endedAt;
@@ -64,6 +67,45 @@ sessionRouter.patch(
         ...updateData,
       });
       res.status(200).json(sessionUpdated);
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+sessionRouter.patch(
+  "/:id/status",
+  checkAuth,
+  checkRole("ADMIN"),
+  validate(sessionIdParamsSchema, "params"),
+  validate(sessionSetStatusBodySchema),
+  async (req, res, next) => {
+    try {
+      const { status }: { status: SessionStatus } = req.body;
+      const sessionId = req.params.id;
+
+      if (!sessionId) throw makeErr(400, "Id manquant.");
+
+      const session = await SessionModel.findById(sessionId);
+      if (!session) throw makeErr(404, "Session introuvable");
+
+      if (session.status === status) return res.status(200).json(session);
+
+      const allowedTransition = isStatusTransitionAllowed(
+        session.status,
+        status,
+      );
+      if (!allowedTransition)
+        throw makeErr(
+          409,
+          `Transition interdite : ${session.status} -> ${status}`,
+        );
+      const sessionUpdated = await SessionModel.setStatus({
+        id: sessionId,
+        fromStatus: session.status,
+        toStatus: status,
+      });
+      return res.status(200).json(sessionUpdated);
     } catch (err) {
       next(err);
     }
