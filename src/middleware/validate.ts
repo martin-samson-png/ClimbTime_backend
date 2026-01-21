@@ -5,7 +5,7 @@ type ValidateTarget = "body" | "params" | "query";
 
 export const validate =
   (schema: Joi.ObjectSchema, target: ValidateTarget = "body") =>
-  (req: Request, _res: Response, next: NextFunction) => {
+  (req: Request, res: Response, next: NextFunction) => {
     let data: unknown;
     switch (target) {
       case "params":
@@ -35,6 +35,6 @@ export const validate =
 
     if (target === "body") req.body = value;
     if (target === "params") req.params = value;
-    if (target === "query") req.query = value;
+    if (target === "query") res.locals.query = value;
     next();
   };

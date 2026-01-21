@@ -4,6 +4,7 @@ import { checkRole } from "../middleware/checkRole.js";
 import { validate } from "../middleware/validate.js";
 import {
   sessionCreateSchema,
+  sessionFindSchema,
   sessionIdParamsSchema,
   sessionSetStatusBodySchema,
   sessionUpdateSchema,
@@ -106,6 +107,20 @@ sessionRouter.patch(
         toStatus: status,
       });
       return res.status(200).json(sessionUpdated);
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+sessionRouter.get(
+  "/",
+  validate(sessionFindSchema, "query"),
+  async (_req, res, next) => {
+    try {
+      const query = res.locals.query;
+      const sessions = await SessionModel.list(query);
+      return res.status(200).json(sessions);
     } catch (err) {
       next(err);
     }

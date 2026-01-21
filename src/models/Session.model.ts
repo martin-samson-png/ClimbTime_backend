@@ -18,6 +18,18 @@ export interface UpdateSession {
   endedAt?: Date;
 }
 
+export interface FindSession {
+  page: number;
+  limit: number;
+  status?: SessionStatus;
+  city?: string;
+  q?: string;
+  startedAtFrom?: Date;
+  startedAtTo?: Date;
+  sortBy: "startedAt" | "createdAt" | "name" | "city" | "status";
+  sortOrder: "asc" | "desc";
+}
+
 export class SessionModel {
   static async create(data: CreateSession) {
     if (data.startedAt <= new Date())
@@ -67,8 +79,44 @@ export class SessionModel {
     return session;
   }
 
-  static async list(filters: UpdateSession) {
-    throw new Error("Not implemented");
+  static async list(filters: FindSession) {
+    return await prisma.session.findMany({
+      where: {
+        ...(filters.status ? { status: filters.status } : {}),
+        ...(filters.city ? { city: filters.city } : {}),
+        ...(filters.startedAtFrom || filters.startedAtTo
+          ? {
+              startedAt: {
+                ...(filters.startedAtFrom
+                  ? { gte: filters.startedAtFrom }
+                  : {}),
+                ...(filters.startedAtTo ? { lte: filters.startedAtTo } : {}),
+              },
+            }
+          : {}),
+        ...(filters.q
+          ? {
+              OR: [
+                { name: { contains: filters.q, mode: "insensitive" } },
+                { city: { contains: filters.q, mode: "insensitive" } },
+              ],
+            }
+          : {}),
+      },
+      orderBy: [{ [filters.sortBy]: filters.sortOrder }, { createdAt: "desc" }],
+      skip: (filters.page - 1) * filters.limit,
+      take: filters.limit,
+      select: {
+        id: true,
+        name: true,
+        city: true,
+        startedAt: true,
+        endedAt: true,
+        status: true,
+        createdAt: true,
+        createdBy: true,
+      },
+    });
   }
 
   static async setStatus({

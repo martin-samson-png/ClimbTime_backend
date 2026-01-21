@@ -78,7 +78,7 @@ export const sessionFindSchema = Joi.object({
     "number.base": "limit doit être un nombre",
     "number.integer": "limit doit être un entier",
     "number.min": "limit doit être >= 1",
-    "number.max": "limit ne doit pas dépasser 100",
+    "number.max": "limit ne doit pas dépasser 50",
   }),
   status: Joi.string()
     .valid(...sessionStatus)
